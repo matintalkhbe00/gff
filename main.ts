@@ -1,4 +1,5 @@
-const tokens = [
+
+const tokens: string[] = [
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTAzZDk1NGI2OTAxNzgwMDk5ZWE5IiwiaWF0IjoxNzI2ODc0NTg2LCJleHAiOjE3MjY5NjA5ODYsInR5cGUiOiJhY2Nlc3MifQ.7ScySwuYovsGLAeBQeMs3qtua-1SphFrGWYEjI-cC6g",
   //09045087864
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTA0NWMxMjM0Y2ZkYTZlZDc5Yjk5IiwiaWF0IjoxNzI2ODc0NzE3LCJleHAiOjE3MjY5NjExMTcsInR5cGUiOiJhY2Nlc3MifQ.qAFS2VbAmEbxMG9AiNUNnMuOT0dMT10_df81f0VAgvQ",
@@ -19,59 +20,63 @@ const tokens = [
   //09191493905
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTA2NWEyYTgxMGEwYjQ1OGQ0NWU0IiwiaWF0IjoxNzI2ODc1MjI3LCJleHAiOjE3MjY5NjE2MjcsInR5cGUiOiJhY2Nlc3MifQ.gURfL4UOFBrkblB7rf9WsCV5stgaQVLSy0YyHaqMyGs",
   //09303884022
-  
 ];
 
-async function fetchMissionsForTokens() {
-    let total = 0;
-    for (const token of tokens) {
-        console.log(`Processing token: ${token}`);
-        
-        try {
-            const response = await fetch("https://api-mission.goatsbot.xyz/missions/user/", {
-                method: "GET",
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+interface Mission {
+  _id: string;
+  reward: number;
+  status: boolean;
+}
 
-            const data = await response.json();
-            const inactiveMissions = [];
-            let totalCoins = 0;
+async function fetchMissionsForTokens(): Promise<void> {
+  let total = 0;
+  for (const token of tokens) {
+      console.log(`Processing token: ${token}`);
 
-            for (const [key, missions] of Object.entries(data)) {
-                const filteredMissions = missions.filter(mission => !mission.status);
+      try {
+          const response = await fetch("https://api-mission.goatsbot.xyz/missions/user/", {
+              method: "GET",
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+              },
+          });
 
-                filteredMissions.forEach(mission => {
-                    inactiveMissions.push(mission._id);
-                    totalCoins += mission.reward;
-                });
-            }
-            total += totalCoins
-            console.log(`Inactive Mission IDs`, inactiveMissions);
-            console.log(`Total Coins`, totalCoins);
-            console.log(`Total`, total);
-            
+          const data: { [key: string]: Mission[] } = await response.json();
+          const inactiveMissions: string[] = [];
+          let totalCoins = 0;
 
-            for (const missionId of inactiveMissions) {
-                const actionResponse = await fetch(`https://dev-api.goatsbot.xyz/missions/action/${missionId}`, {
-                    method: "POST",
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+          for (const [key, missions] of Object.entries(data)) {
+              const filteredMissions = missions.filter((mission: Mission) => !mission.status);
 
-                if (actionResponse.ok) {
-                    console.log(`Action executed for mission ID: ${missionId}`);
-                } else {
-                    console.error(`Failed to execute action for mission ID: ${missionId} `);
-                }
-            }
+              filteredMissions.forEach((mission: Mission) => {
+                  inactiveMissions.push(mission._id);
+                  totalCoins += mission.reward;
+              });
+          }
+          total += totalCoins;
+          console.log(`Inactive Mission IDs`, inactiveMissions);
+          console.log(`Total Coins`, totalCoins);
+          console.log(`Total`, total);
 
-        } catch (error) {
-            console.error(`Error for token ${token}:`, error);
-        }
-    }
+          for (const missionId of inactiveMissions) {
+              const actionResponse = await fetch(`https://dev-api.goatsbot.xyz/missions/action/${missionId}`, {
+                  method: "POST",
+                  headers: {
+                      'Authorization': `Bearer ${token}`,
+                  },
+              });
+
+              if (actionResponse.ok) {
+                  console.log(`Action executed for mission ID: ${missionId}`);
+              } else {
+                  console.error(`Failed to execute action for mission ID: ${missionId}`);
+              }
+          }
+
+      } catch (error) {
+          console.error(`Error for token ${token}:`, error);
+      }
+  }
 }
 
 // فراخوانی تابع

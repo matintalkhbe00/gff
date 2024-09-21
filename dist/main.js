@@ -1,66 +1,70 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const node_fetch_1 = __importDefault(require("node-fetch"));
-async function action(headers) {
-    const res = await (0, node_fetch_1.default)("https://dev-api.goatsbot.xyz/missions/action/66db47e2ff88e4527783327e", {
-        method: "POST",
-        headers,
-    });
-    const json = await res.json();
-    return res.status === 201;
-}
-async function getNextTime(headers) {
-    const res = await (0, node_fetch_1.default)("https://api-mission.goatsbot.xyz/missions/user", {
-        headers,
-    });
-    if (res.status !== 200) {
-        throw new Error("Get missions request failed");
-    }
-    const data = await res.json();
-    return data["SPECIAL MISSION"][0]["next_time_execute"];
-}
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-async function handleToken(authToken) {
-    const headers = { Authorization: `Bearer ${authToken}` };
-    let nextTime = await getNextTime(headers);
-    while (true) {
-        const now = Math.floor(Date.now() / 1000);
-        if (now >= nextTime) {
-            const result = await action(headers);
-            if (result) {
-                console.log(`Success: Action to earn was successfully completed with token ${authToken}`);
-                nextTime = await getNextTime(headers);
-                console.log(`Success: Got new nextTime with token ${authToken}: ${nextTime}`);
-            }
-            else {
-                console.log(`Failed: Action to earn failed with token ${authToken}`);
-            }
-        }
-        else {
-            // console.log(`Waiting: Time left for next action with token ${authToken}: ${nextTime - now}s`);
-        }
-        await delay(1000);
-    }
-}
-async function makeMoney(authTokens) {
-    // Create an array of promises, one for each token
-    const promises = authTokens.map(token => handleToken(token));
-    // Use Promise.all to run all promises concurrently
-    await Promise.all(promises);
-}
-// List of your authorization tokens
-const authTokens = [
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlN2Y2OThmZjM0YmE2YzMyYzM3ZGFmIiwiaWF0IjoxNzI2NzQ2MzgyLCJleHAiOjE3MjY4MzI3ODIsInR5cGUiOiJhY2Nlc3MifQ.2Q--9c2-dQFRACZ2_LuxH9PESpSw7DztlMFRWN1a_eM",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZkZGZiNjYxZjdmMGYxNGZmYzkxNDAyIiwiaWF0IjoxNzI2NzQ0MTQxLCJleHAiOjE3MjY4MzA1NDEsInR5cGUiOiJhY2Nlc3MifQ.ramXMlbuur_9a94xCE-xAGq5ttapynVBq9_W4yJzadU",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlN2ZhYzI2M2Y3Mzg1MGY4YjJjYTRiIiwiaWF0IjoxNzI2NzQ2NTYxLCJleHAiOjE3MjY4MzI5NjEsInR5cGUiOiJhY2Nlc3MifQ.6uxzVl-TEa0M1nofppqM6-x5owV74VxHgUhz-uYIzmQ",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlYzEwNTc2M2Y3Mzg1MGY4M2ZkN2Y1IiwiaWF0IjoxNzI2NzQ2NzEyLCJleHAiOjE3MjY4MzMxMTIsInR5cGUiOiJhY2Nlc3MifQ.JUZfoAKU5fbtXcvMt_oexGyByob7tdiuOCOEc5BrYkc",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlYzE2M2E5YTlkNTdkOTNmZmJhZDcxIiwiaWF0IjoxNzI2NzQ4MjE4LCJleHAiOjE3MjY4MzQ2MTgsInR5cGUiOiJhY2Nlc3MifQ.XdTFQ4BuE0SaL8SP1M39WoPSlOmKhmHjIaaV0pFq1n8",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlYzE4YTM5YTlkNTdkOTNmMDAzODU4IiwiaWF0IjoxNzI2NzQ4ODM1LCJleHAiOjE3MjY4MzUyMzUsInR5cGUiOiJhY2Nlc3MifQ.UGK43oqZ75CEfEXWuBMADsFRfRxcGj_pSutyA3i2Dh0"
+const tokens = [
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTAzZDk1NGI2OTAxNzgwMDk5ZWE5IiwiaWF0IjoxNzI2ODc0NTg2LCJleHAiOjE3MjY5NjA5ODYsInR5cGUiOiJhY2Nlc3MifQ.7ScySwuYovsGLAeBQeMs3qtua-1SphFrGWYEjI-cC6g",
+    //09045087864
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTA0NWMxMjM0Y2ZkYTZlZDc5Yjk5IiwiaWF0IjoxNzI2ODc0NzE3LCJleHAiOjE3MjY5NjExMTcsInR5cGUiOiJhY2Nlc3MifQ.qAFS2VbAmEbxMG9AiNUNnMuOT0dMT10_df81f0VAgvQ",
+    //09365087864
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTA0ZTEyYTgxMGEwYjQ1OGJjMjI1IiwiaWF0IjoxNzI2ODc0ODQ5LCJleHAiOjE3MjY5NjEyNDksInR5cGUiOiJhY2Nlc3MifQ.rrJdfY1zjMfY0VTF5zjp9XJye-d2fFGcZJHhaaYSJRU",
+    //09191493905
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlYzE4YTM5YTlkNTdkOTNmMDAzODU4IiwiaWF0IjoxNzI2ODI2MzMxLCJleHAiOjE3MjY5MTI3MzEsInR5cGUiOiJhY2Nlc3MifQ.tJTEbZmVDksqgYnOa_JKl5sSBr0aRj8HkwBmg6X09O0",
+    //09357792770
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlYzE2M2E5YTlkNTdkOTNmZmJhZDcxIiwiaWF0IjoxNzI2ODI0MTEyLCJleHAiOjE3MjY5MTA1MTIsInR5cGUiOiJhY2Nlc3MifQ.EFT6obc9WINbDfxYDwcRLZfn-B5Jlg5NDJO_IDZ9P40",
+    //09036567864
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlYzEwNTc2M2Y3Mzg1MGY4M2ZkN2Y1IiwiaWF0IjoxNzI2ODI2OTM4LCJleHAiOjE3MjY5MTMzMzgsInR5cGUiOiJhY2Nlc3MifQ.MoV11oV77jJtglZCqM6Mfnft01nj6RL8nAqMvx7mNiE",
+    //09197473984
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTAzZDk1NGI2OTAxNzgwMDk5ZWE5IiwiaWF0IjoxNzI2ODc0NTg2LCJleHAiOjE3MjY5NjA5ODYsInR5cGUiOiJhY2Nlc3MifQ.7ScySwuYovsGLAeBQeMs3qtua-1SphFrGWYEjI-cC6g",
+    //09045087864
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTA0NWMxMjM0Y2ZkYTZlZDc5Yjk5IiwiaWF0IjoxNzI2ODc0NzE3LCJleHAiOjE3MjY5NjExMTcsInR5cGUiOiJhY2Nlc3MifQ.qAFS2VbAmEbxMG9AiNUNnMuOT0dMT10_df81f0VAgvQ",
+    //09365087864
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTA0ZTEyYTgxMGEwYjQ1OGJjMjI1IiwiaWF0IjoxNzI2ODc0ODQ5LCJleHAiOjE3MjY5NjEyNDksInR5cGUiOiJhY2Nlc3MifQ.rrJdfY1zjMfY0VTF5zjp9XJye-d2fFGcZJHhaaYSJRU",
+    //09191493905
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiNjZlZTA2NWEyYTgxMGEwYjQ1OGQ0NWU0IiwiaWF0IjoxNzI2ODc1MjI3LCJleHAiOjE3MjY5NjE2MjcsInR5cGUiOiJhY2Nlc3MifQ.gURfL4UOFBrkblB7rf9WsCV5stgaQVLSy0YyHaqMyGs",
+    //09303884022
 ];
-makeMoney(authTokens);
-console.log("Executed: Started...");
+async function fetchMissionsForTokens() {
+    let total = 0;
+    for (const token of tokens) {
+        console.log(`Processing token: ${token}`);
+        try {
+            const response = await fetch("https://api-mission.goatsbot.xyz/missions/user/", {
+                method: "GET",
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            const inactiveMissions = [];
+            let totalCoins = 0;
+            for (const [key, missions] of Object.entries(data)) {
+                const filteredMissions = missions.filter((mission) => !mission.status);
+                filteredMissions.forEach((mission) => {
+                    inactiveMissions.push(mission._id);
+                    totalCoins += mission.reward;
+                });
+            }
+            total += totalCoins;
+            console.log(`Inactive Mission IDs`, inactiveMissions);
+            console.log(`Total Coins`, totalCoins);
+            console.log(`Total`, total);
+            for (const missionId of inactiveMissions) {
+                const actionResponse = await fetch(`https://dev-api.goatsbot.xyz/missions/action/${missionId}`, {
+                    method: "POST",
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                if (actionResponse.ok) {
+                    console.log(`Action executed for mission ID: ${missionId}`);
+                }
+                else {
+                    console.error(`Failed to execute action for mission ID: ${missionId}`);
+                }
+            }
+        }
+        catch (error) {
+            console.error(`Error for token ${token}:`, error);
+        }
+    }
+}
+// فراخوانی تابع
+fetchMissionsForTokens();
